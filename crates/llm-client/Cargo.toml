@@ -1,0 +1,18 @@
+[package]
+name = "llm-client"
+version = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+keywords = { workspace = true }
+
+
+[dependencies]
+thiserror = { workspace = true }
+reqwest = { workspace = true }
+eyre = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+log = { workspace = true }

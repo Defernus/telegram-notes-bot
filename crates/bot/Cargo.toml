@@ -1,0 +1,22 @@
+[package]
+name = "bot"
+version = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+repository = { workspace = true }
+keywords = { workspace = true }
+
+
+[dependencies]
+clap = { workspace = true }
+eyre = { workspace = true }
+tokio = { workspace = true }
+dotenvy = { workspace = true }
+rand = { workspace = true }
+teloxide = { workspace = true }
+pretty_env_logger = { workspace = true }
+log = { workspace = true }
+
+# workspace dependencies
+llm-client = { workspace = true }
