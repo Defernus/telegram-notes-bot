@@ -1,8 +1,8 @@
 FROM rust:1.72.0
 
-WORKDIR /generate-random-value
+WORKDIR /app
 
 COPY . .
-RUN cargo install --path ./generate_random_value
+RUN cargo install --bin --path ./bot
 
-CMD ["generate-random-value"]
+CMD ["bot"]
