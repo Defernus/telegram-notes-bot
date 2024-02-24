@@ -201,11 +201,12 @@ impl MistralClient {
 
         // FIXME maybe we should clone the entire history here
         let mut history = self.history.clone();
+
         history.push(message.clone());
 
         let body = json!({
             "model": "mistral-tiny",
-            "messages": self.history,
+            "messages": history,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
             "random_seed": self.random_seed,
@@ -245,7 +246,8 @@ impl LlmClient for MistralClient {
             .await?;
 
         let ResponseChoice { message, .. } = response
-            .choices.first()
+            .choices
+            .first()
             .expect("choise should exist")
             .clone();
 
@@ -262,7 +264,8 @@ impl LlmClient for MistralClient {
             message: response_message,
             ..
         } = response
-            .choices.first()
+            .choices
+            .first()
             .expect("choise should exist")
             .clone();
 

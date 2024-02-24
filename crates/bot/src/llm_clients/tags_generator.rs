@@ -1,6 +1,5 @@
-use std::{fmt::Display, ops::Deref};
-
 use llm_client::{ImplMessage, LlmClient, MistralClient, MistralMessage, MistralModelType};
+use std::{fmt::Display, ops::Deref};
 
 pub const TAG_GENERATOR_PROMPT: &str = r####"
 You are notes tags generator. Your goal to help with tags generation fot notes.
@@ -110,40 +109,31 @@ impl TagsGenerator {
     }
 
     /// Generate tags for a text.
-    pub async fn generate_tags(&self, text: impl ImplMessage) -> eyre::Result<Tags> {
+    pub async fn generate_tags(
+        &self,
+        text: impl ImplMessage,
+        // TODO make something with these nested Results
+    ) -> eyre::Result<Result<Tags, String>> {
         let text = text.to_string();
         let text = text.trim();
         let response = self.base_client.send_message_without_history(text).await?;
 
-        let response = response.trim();
+        Ok(Tags::from_str(&response, self.max_tags_amount).ok_or(response))
+    }
 
-        // Safety: Split always returns at least one element
-        let response = unsafe { response.split('\n').next().unwrap_unchecked() };
+    /// Generate tags for a text and format them as a markdown string.
+    /// If model output is not a valid tag list, return it as a message.
+    pub async fn generate_tags_md(
+        &self,
+        text: impl ImplMessage,
+        // TODO make something with these nested Results
+    ) -> eyre::Result<String> {
+        let tags = self.generate_tags(text).await?;
 
-        let response = response.trim().to_string();
-
-        let response = response.replace(r"\_", "_").replace(r"\#", "#");
-
-        // TODO check response format using `(#[_a-z0-9]+ )*#[_a-z0-9]+` or something similar
-
-        let response: Vec<_> = response
-            .split('#')
-            .filter_map(|tag| {
-                let tag = tag.trim().to_lowercase();
-                if tag.is_empty() {
-                    None
-                } else {
-                    Some(tag)
-                }
-            })
-            .take(self.max_tags_amount)
-            .collect();
-
-        if response.is_empty() {
-            eyre::bail!("No tags were generated")
+        match tags {
+            Ok(tags) => Ok(tags.to_escaped_md()),
+            Err(message) => Ok(escape_md(&message)),
         }
-
-        Ok(response.into())
     }
 }
 
@@ -158,8 +148,37 @@ pub struct Tags {
 }
 
 impl Tags {
+    /// Create a new `Tags` from a string.
+    ///
+    /// `max_tags_amount` is the maximum amount of tags that can be generated.
+    /// Use `0` for unlimited.
+    pub fn from_str(tags: impl ToString, max_tags_amount: usize) -> Option<Self> {
+        let tags = tags.to_string();
+        let tags_regex = regex::Regex::new(r#"^(\#[a-z_\\]+ )*(\#[a-z_\\]+)"#).unwrap();
+        let tags_match = tags_regex.find_iter(tags.as_str()).collect::<Vec<_>>();
+
+        if tags_match.is_empty() {
+            return None;
+        }
+
+        let tags = tags_match
+            .iter()
+            .map(|m| unescape_md(m.as_str()).to_string());
+
+        let tags = if max_tags_amount == 0 {
+            tags.take(max_tags_amount).collect::<Vec<_>>()
+        } else {
+            tags.collect::<Vec<_>>()
+        };
+
+        Some(Self { tags })
+    }
+
     pub fn to_escaped_md(&self) -> String {
-        self.to_string().replace('#', r"\#").replace('_', r"\_")
+        self.iter()
+            .map(|tag| escape_md(tag))
+            .collect::<Vec<_>>()
+            .join(" ")
     }
 }
 
@@ -187,4 +206,44 @@ impl Display for Tags {
         }
         Ok(())
     }
+}
+
+fn escape_md(text: &str) -> String {
+    text.replace('\\', r"\\")
+        .replace('*', r"\*")
+        .replace('_', r"\_")
+        .replace('`', r"\`")
+        .replace('{', r"\{")
+        .replace('}', r"\}")
+        .replace('[', r"\[")
+        .replace(']', r"\]")
+        .replace('(', r"\(")
+        .replace(')', r"\)")
+        .replace('#', r"\#")
+        .replace('+', r"\+")
+        .replace('-', r"\-")
+        .replace('.', r"\.")
+        .replace('!', r"\!")
+        .replace('|', r"\|")
+        .to_string()
+}
+
+fn unescape_md(text: &str) -> String {
+    text.replace(r"\*", "*")
+        .replace(r"\_", "_")
+        .replace(r"\`", "`")
+        .replace(r"\{", "{")
+        .replace(r"\}", "}")
+        .replace(r"\[", "[")
+        .replace(r"\]", "]")
+        .replace(r"\(", "(")
+        .replace(r"\)", ")")
+        .replace(r"\#", "#")
+        .replace(r"\+", "+")
+        .replace(r"\-", "-")
+        .replace(r"\.", ".")
+        .replace(r"\!", "!")
+        .replace(r"\|", "|")
+        .replace(r"\\", "\\")
+        .to_string()
 }

@@ -17,6 +17,7 @@ rand = { workspace = true }
 teloxide = { workspace = true }
 pretty_env_logger = { workspace = true }
 log = { workspace = true }
+regex = { workspace = true }
 
 # workspace dependencies
 llm-client = { workspace = true }
