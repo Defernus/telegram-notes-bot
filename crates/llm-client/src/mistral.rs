@@ -245,8 +245,7 @@ impl LlmClient for MistralClient {
             .await?;
 
         let ResponseChoice { message, .. } = response
-            .choices
-            .get(0)
+            .choices.first()
             .expect("choise should exist")
             .clone();
 
@@ -263,8 +262,7 @@ impl LlmClient for MistralClient {
             message: response_message,
             ..
         } = response
-            .choices
-            .get(0)
+            .choices.first()
             .expect("choise should exist")
             .clone();
 

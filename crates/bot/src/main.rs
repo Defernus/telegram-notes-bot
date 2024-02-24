@@ -6,7 +6,7 @@ use teloxide::{
     adaptors::DefaultParseMode,
     payloads::SendMessageSetters,
     requests::{Requester, RequesterExt},
-    types::{MediaKind, Message as TgMessage, MessageCommon, MessageKind, ParseMode},
+    types::{Message as TgMessage, ParseMode},
     Bot,
 };
 

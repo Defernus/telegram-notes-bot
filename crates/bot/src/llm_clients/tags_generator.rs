@@ -118,7 +118,7 @@ impl TagsGenerator {
         let response = response.trim();
 
         // Safety: Split always returns at least one element
-        let response = unsafe { response.split("\n").next().unwrap_unchecked() };
+        let response = unsafe { response.split('\n').next().unwrap_unchecked() };
 
         let response = response.trim().to_string();
 
@@ -127,7 +127,7 @@ impl TagsGenerator {
         // TODO check response format using `(#[_a-z0-9]+ )*#[_a-z0-9]+` or something similar
 
         let response: Vec<_> = response
-            .split("#")
+            .split('#')
             .filter_map(|tag| {
                 let tag = tag.trim().to_lowercase();
                 if tag.is_empty() {
@@ -159,7 +159,7 @@ pub struct Tags {
 
 impl Tags {
     pub fn to_escaped_md(&self) -> String {
-        self.to_string().replace("#", r"\#").replace("_", r"\_")
+        self.to_string().replace('#', r"\#").replace('_', r"\_")
     }
 }
 
