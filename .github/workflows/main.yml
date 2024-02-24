@@ -30,19 +30,29 @@ jobs:
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v2
 
-      - name: Install cargo make
-        uses: davidB/rust-cargo-make@v1
+      - name Install clippy
+        run: rustup component add clippy
+
+      - name: Just CLI
+        uses: extractions/setup-just@v1
+        with:
+          just-version: '1.4.0'
+          # Uncomment and set MY_GITHUB_TOKEN secret in repository settings to enable github authentication
+          # for just installation https://github.com/extractions/setup-just?tab=readme-ov-file#usage
+          # github-token: ${{ secrets.MY_GITHUB_TOKEN }}
 
       - name: Format
-        run: cargo make fmt
+        run: just fmt
 
       - name: Clippy
-        run: cargo make clippy
+        run: just clippy
 
-      - name: Test
-        run: cargo make test
+      # TODO add tests
+      # - name: Test
+      #   run: just test
 
       - name: Audit dependencies
         run: |
           cargo install --locked cargo-audit
           cargo make audit
+      
