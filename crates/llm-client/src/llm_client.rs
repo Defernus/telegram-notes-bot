@@ -6,7 +6,7 @@ pub trait LlmClient {
     async fn reset_chat(&mut self) -> eyre::Result<()>;
 
     async fn send_message_without_history<T: ImplMessage>(
-        &mut self,
+        &self,
         message: T,
     ) -> eyre::Result<String>;
 

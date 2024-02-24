@@ -188,7 +188,7 @@ impl MistralClient {
         self
     }
 
-    async fn send_message_inner(&mut self, message: MistralMessage) -> eyre::Result<Response> {
+    async fn send_message_inner(&self, message: MistralMessage) -> eyre::Result<Response> {
         let mut headers = HeaderMap::new();
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
         headers.insert(
@@ -199,7 +199,9 @@ impl MistralClient {
 
         log::debug!("Sending message to Mistral: {:?}", message);
 
-        self.history.push(message);
+        // FIXME maybe we should clone the entire history here
+        let mut history = self.history.clone();
+        history.push(message.clone());
 
         let body = json!({
             "model": "mistral-tiny",
@@ -235,7 +237,7 @@ impl LlmClient for MistralClient {
     }
 
     async fn send_message_without_history<T: ImplMessage>(
-        &mut self,
+        &self,
         message: T,
     ) -> eyre::Result<String> {
         let response = self
@@ -248,27 +250,28 @@ impl LlmClient for MistralClient {
             .expect("choise should exist")
             .clone();
 
-        self.history.pop();
-
         let MistralMessage { content, .. } = message.clone();
 
         Ok(content)
     }
 
-    async fn send_message<T: ImplMessage>(&mut self, message: T) -> eyre::Result<String> {
-        let response = self
-            .send_message_inner(MistralMessage::user(message))
-            .await?;
+    async fn send_message<T: ImplMessage>(&mut self, user_message: T) -> eyre::Result<String> {
+        let user_message = MistralMessage::user(user_message);
+        let response = self.send_message_inner(user_message.clone()).await?;
 
-        let ResponseChoice { message, .. } = response
+        let ResponseChoice {
+            message: response_message,
+            ..
+        } = response
             .choices
             .get(0)
             .expect("choise should exist")
             .clone();
 
-        let MistralMessage { content, .. } = message.clone();
+        let content = response_message.content.clone();
 
-        self.history.push(message);
+        self.history.push(user_message);
+        self.history.push(response_message);
 
         Ok(content)
     }

@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops::Deref};
 
 use llm_client::{ImplMessage, LlmClient, MistralClient, MistralMessage, MistralModelType};
 
@@ -110,7 +110,7 @@ impl TagsGenerator {
     }
 
     /// Generate tags for a text.
-    pub async fn generate_tags(&mut self, text: impl ImplMessage) -> eyre::Result<Tags> {
+    pub async fn generate_tags(&self, text: impl ImplMessage) -> eyre::Result<Tags> {
         let text = text.to_string();
         let text = text.trim();
         let response = self.base_client.send_message_without_history(text).await?;
@@ -122,7 +122,7 @@ impl TagsGenerator {
 
         let response = response.trim().to_string();
 
-        let response = response.replace(r"\_", "_");
+        let response = response.replace(r"\_", "_").replace(r"\#", "#");
 
         // TODO check response format using `(#[_a-z0-9]+ )*#[_a-z0-9]+` or something similar
 
@@ -155,6 +155,20 @@ fn calc_mx_tokens(tags_amount: usize) -> usize {
 #[derive(Debug, Clone)]
 pub struct Tags {
     tags: Vec<String>,
+}
+
+impl Tags {
+    pub fn to_escaped_md(&self) -> String {
+        self.to_string().replace("#", r"\#").replace("_", r"\_")
+    }
+}
+
+impl Deref for Tags {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.tags
+    }
 }
 
 impl From<Vec<String>> for Tags {
