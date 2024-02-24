@@ -18,3 +18,9 @@ clippy:
 
 fix-clippy:
     cargo clippy --fix --all-targets --all-features -- -D warnings
+
+audit:
+    cargo audit
+
+# TODO: add tests
+# test:
