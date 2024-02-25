@@ -13,7 +13,7 @@ async fn main() {
     if dotenv().is_ok() {
         log::debug!("Loaded .env file");
     }
-    pretty_env_logger::init();
+    env_logger::init();
 
     let args = BotArgs::parse();
 
