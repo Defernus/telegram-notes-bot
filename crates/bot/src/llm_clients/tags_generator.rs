@@ -1,7 +1,8 @@
-use llm_client::{ImplMessage, LlmClient, MistralClient, MistralMessage, MistralModelType};
+use crate::{base_llm_methods, escape_md, unescape_md};
+use llm_client::{ImplMessage, LlmClient, MistralClient, MistralModelType, MistralRole};
 use std::{fmt::Display, ops::Deref};
 
-pub const TAG_GENERATOR_PROMPT: &str = r####"
+const PROMPT: &str = r####"
 You are notes tags generator. Your goal to help with tags generation fot notes.
 
 # Rules
@@ -56,6 +57,13 @@ YOU SHOULD RETURN ONLY A TAG LIST! DO NOT ADD ANYTHING ELSE!
 
 "####;
 
+const HISTORY: &[(MistralRole, &str)] = &[
+    (MistralRole::User, "Platformer game about a cat"),
+    (MistralRole::Assistant, "#idea #game #platformer #cat"),
+    (MistralRole::User, "Silicon Valley"),
+    (MistralRole::Assistant, "#must_watch #tv_show #comedy #geek"),
+];
+
 #[derive(Debug, Clone)]
 pub struct TagsGenerator {
     base_client: MistralClient,
@@ -69,28 +77,13 @@ impl TagsGenerator {
             base_client: MistralClient::new(token)
                 .with_model(MistralModelType::Tiny)
                 .with_max_tokens(calc_mx_tokens(max_tags_amount))
-                .with_history(vec![
-                    MistralMessage::system(TAG_GENERATOR_PROMPT),
-                    MistralMessage::user("Platformer game about a cat"),
-                    MistralMessage::assistant("#idea #game #platformer #cat"),
-                    MistralMessage::user("Silicon Valley"),
-                    MistralMessage::assistant("#must_watch #tv_show #comedy #geek"),
-                ]),
+                .with_history(HISTORY)
+                .with_system_message(PROMPT),
             max_tags_amount,
         }
     }
 
-    /// Set the temperature of the Mistral model. Default is 0.7.
-    pub fn with_temperature(mut self, temperature: impl Into<f64>) -> Self {
-        self.base_client = self.base_client.with_temperature(temperature);
-        self
-    }
-
-    /// Set the random seed for the Mistral model. Default is None.
-    pub fn with_random_seed(mut self, random_seed: impl Into<Option<i64>>) -> Self {
-        self.base_client = self.base_client.with_random_seed(random_seed);
-        self
-    }
+    base_llm_methods! {}
 
     /// Set the maximum amount of tags that can be generated. Default is 6.
     pub fn with_max_tags_amount(mut self, max_tags_amount: usize) -> Self {
@@ -99,12 +92,6 @@ impl TagsGenerator {
         self.base_client = self
             .base_client
             .with_max_tokens(calc_mx_tokens(max_tags_amount));
-        self
-    }
-
-    /// Set the Mistral model type.
-    pub fn with_model(mut self, model: MistralModelType) -> Self {
-        self.base_client = self.base_client.with_model(model);
         self
     }
 
@@ -206,44 +193,4 @@ impl Display for Tags {
         }
         Ok(())
     }
-}
-
-fn escape_md(text: &str) -> String {
-    text.replace('\\', r"\\")
-        .replace('*', r"\*")
-        .replace('_', r"\_")
-        .replace('`', r"\`")
-        .replace('{', r"\{")
-        .replace('}', r"\}")
-        .replace('[', r"\[")
-        .replace(']', r"\]")
-        .replace('(', r"\(")
-        .replace(')', r"\)")
-        .replace('#', r"\#")
-        .replace('+', r"\+")
-        .replace('-', r"\-")
-        .replace('.', r"\.")
-        .replace('!', r"\!")
-        .replace('|', r"\|")
-        .to_string()
-}
-
-fn unescape_md(text: &str) -> String {
-    text.replace(r"\*", "*")
-        .replace(r"\_", "_")
-        .replace(r"\`", "`")
-        .replace(r"\{", "{")
-        .replace(r"\}", "}")
-        .replace(r"\[", "[")
-        .replace(r"\]", "]")
-        .replace(r"\(", "(")
-        .replace(r"\)", ")")
-        .replace(r"\#", "#")
-        .replace(r"\+", "+")
-        .replace(r"\-", "-")
-        .replace(r"\.", ".")
-        .replace(r"\!", "!")
-        .replace(r"\|", "|")
-        .replace(r"\\", "\\")
-        .to_string()
 }

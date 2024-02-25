@@ -59,6 +59,19 @@ impl MistralMessage {
     }
 }
 
+impl From<(MistralRole, &str)> for MistralMessage {
+    fn from((role, content): (MistralRole, &str)) -> Self {
+        Self {
+            role,
+            content: content.to_string(),
+        }
+    }
+}
+
+pub trait ToHistory {
+    fn to_history(self) -> Vec<MistralMessage>;
+}
+
 #[derive(Debug, Clone)]
 pub struct MistralClient {
     api_key: String,
@@ -130,7 +143,10 @@ impl MistralClient {
 
     /// Set the maximum number of tokens to generate. Default is unlimited.
     pub fn with_max_tokens(mut self, max_tokens: impl Into<Option<usize>>) -> Self {
-        self.max_tokens = max_tokens.into();
+        self.max_tokens = match max_tokens.into() {
+            Some(0) => None,
+            other => other,
+        };
         self
     }
 
@@ -144,14 +160,6 @@ impl MistralClient {
     pub fn with_message(mut self, message: MistralMessage) -> Self {
         self.history.push(message);
         self
-    }
-
-    /// Adds a system message to the end of the history of the client.
-    pub fn with_system_message(self, message: impl ToString) -> Self {
-        self.with_message(MistralMessage {
-            role: MistralRole::System,
-            content: message.to_string(),
-        })
     }
 
     /// Adds a user message to the end of the history of the client.
@@ -171,8 +179,29 @@ impl MistralClient {
     }
 
     /// Set history of the client.
-    pub fn with_history(mut self, history: Vec<MistralMessage>) -> Self {
-        self.history = history;
+    /// If there is already a history, it will be replaced (including system messages).
+    pub fn with_history(mut self, history: impl ToHistory) -> Self {
+        self.history = history.to_history();
+        self
+    }
+
+    /// Inserts system message to the beginning of the history of the client.
+    /// If there is already a system message, it will be replaced.
+    pub fn with_system_message(mut self, message: impl ToString) -> Self {
+        let message = message.to_string();
+
+        match self.history.first_mut() {
+            Some(MistralMessage {
+                role: MistralRole::System,
+                content,
+            }) => {
+                *content = message;
+            }
+            _ => {
+                self.history.insert(0, MistralMessage::system(message));
+            }
+        };
+
         self
     }
 
@@ -211,6 +240,7 @@ impl MistralClient {
             "max_tokens": self.max_tokens,
             "random_seed": self.random_seed,
         });
+        println!("Sending message: {body:?}");
 
         let response = self
             .client
@@ -279,5 +309,20 @@ impl LlmClient for MistralClient {
 
     fn last_response(&self) -> Option<String> {
         self.history.last().map(|item| item.content.clone())
+    }
+}
+
+impl ToHistory for Vec<MistralMessage> {
+    fn to_history(self) -> Vec<MistralMessage> {
+        self
+    }
+}
+
+impl<T> ToHistory for &[T]
+where
+    T: Into<MistralMessage> + Clone,
+{
+    fn to_history(self) -> Vec<MistralMessage> {
+        self.iter().map(|item| item.clone().into()).collect()
     }
 }
