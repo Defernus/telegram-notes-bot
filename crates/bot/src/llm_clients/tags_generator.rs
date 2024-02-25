@@ -55,6 +55,11 @@ YOU SHOULD RETURN ONLY A TAG LIST! DO NOT ADD ANYTHING ELSE!
 ## Response
 `#address #home #malasia #kuala_lumpur`
 
+## Input
+`Add feature: Dark mode`
+
+## Response
+`#idea #project #feature #dark_mode`
 "####;
 
 const HISTORY: &[(MistralRole, &str)] = &[
@@ -115,7 +120,9 @@ impl TagsGenerator {
         text: impl ImplMessage,
         // TODO make something with these nested Results
     ) -> eyre::Result<String> {
-        let tags = self.generate_tags(text).await?;
+        let tags = self
+            .generate_tags(format!("Note:\n{}", text.to_string()))
+            .await?;
 
         match tags {
             Ok(tags) => Ok(tags.to_escaped_md()),
@@ -142,30 +149,44 @@ impl Tags {
     pub fn from_str(tags: impl ToString, max_tags_amount: usize) -> Option<Self> {
         let tags = tags.to_string();
         let tags_regex = regex::Regex::new(r#"^(\#[a-z_\\]+ )*(\#[a-z_\\]+)"#).unwrap();
-        let tags_match = tags_regex.find_iter(tags.as_str()).collect::<Vec<_>>();
+        let tags_match = tags_regex.find(tags.as_str())?;
 
         if tags_match.is_empty() {
             return None;
         }
 
-        let tags = tags_match
-            .iter()
-            .map(|m| unescape_md(m.as_str()).to_string());
+        let tags = unescape_md(&tags);
+        let tags = tags.split("#").filter_map(|tag| {
+            let tag = tag.trim();
+            let tag = tag.split_once(' ').unwrap_or((tag, "")).0;
+
+            if tag.is_empty() {
+                None
+            } else {
+                Some(tag.to_string())
+            }
+        });
 
         let tags = if max_tags_amount == 0 {
-            tags.take(max_tags_amount).collect::<Vec<_>>()
-        } else {
             tags.collect::<Vec<_>>()
+        } else {
+            tags.take(max_tags_amount).collect::<Vec<_>>()
         };
+
+        println!("max_tags_amount: {:?}", max_tags_amount);
+        println!("tags: {:?}", tags);
 
         Some(Self { tags })
     }
 
     pub fn to_escaped_md(&self) -> String {
-        self.iter()
-            .map(|tag| escape_md(tag))
+        let resp = self
+            .iter()
+            .map(|tag| format!("#{}", escape_md(tag)))
             .collect::<Vec<_>>()
-            .join(" ")
+            .join(" ");
+
+        escape_md(&resp)
     }
 }
 
