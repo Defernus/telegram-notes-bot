@@ -106,7 +106,7 @@ impl TagsGenerator {
         text: impl ImplMessage,
         // TODO make something with these nested Results
     ) -> eyre::Result<Result<Tags, String>> {
-        let text = text.to_string();
+        let text = format!("My note to generate tags for:\n{}", text.to_string());
         let text = text.trim();
         let response = self.base_client.send_message_without_history(text).await?;
 
@@ -120,9 +120,7 @@ impl TagsGenerator {
         text: impl ImplMessage,
         // TODO make something with these nested Results
     ) -> eyre::Result<String> {
-        let tags = self
-            .generate_tags(format!("Note:\n{}", text.to_string()))
-            .await?;
+        let tags = self.generate_tags(text).await?;
 
         match tags {
             Ok(tags) => Ok(tags.to_escaped_md()),
@@ -179,7 +177,7 @@ impl Tags {
     pub fn to_escaped_md(&self) -> String {
         let resp = self
             .iter()
-            .map(|tag| format!("#{}", escape_md(tag)))
+            .map(|tag| format!("#{tag}"))
             .collect::<Vec<_>>()
             .join(" ");
 

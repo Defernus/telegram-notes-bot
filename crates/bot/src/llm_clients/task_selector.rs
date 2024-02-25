@@ -9,6 +9,8 @@ const MAX_TOKENS: usize = 10;
 const PROMPT: &str = r####"
 You are the task selector manager bot. Your goal to select exact task that user want to do.
 
+If user asked for active help (Fix something or do something) - select [note].
+
 # Tags
 {{tags}}
 "####;
@@ -52,6 +54,12 @@ const HISTORY: &[(MistralRole, &str)] = &[
     (MistralRole::Assistant, "[unknown]"),
     (MistralRole::User, "How to use this bot?"),
     (MistralRole::Assistant, "[help]"),
+    (MistralRole::User, "Fix this bug"),
+    (MistralRole::Assistant, "[note]"),
+    (MistralRole::User, "What is the meaning of life?"),
+    (MistralRole::Assistant, "[note]"),
+    (MistralRole::User, "Add red close button to this bot"),
+    (MistralRole::Assistant, "[note]"),
 ];
 
 #[derive(Debug, Clone)]
