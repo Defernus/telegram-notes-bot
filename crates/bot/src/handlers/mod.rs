@@ -61,8 +61,6 @@ impl MessageHandlerContext {
             }
         };
 
-        println!("Selected task: {task_type}");
-
         match task_type {
             TaskType::Note => {
                 handle_note(self, bot, &user_msg, text, loading_message).await?;

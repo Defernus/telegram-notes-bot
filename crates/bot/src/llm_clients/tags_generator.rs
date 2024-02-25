@@ -173,9 +173,6 @@ impl Tags {
             tags.take(max_tags_amount).collect::<Vec<_>>()
         };
 
-        println!("max_tags_amount: {:?}", max_tags_amount);
-        println!("tags: {:?}", tags);
-
         Some(Self { tags })
     }
 

@@ -25,8 +25,6 @@ pub async fn handle_note(
         }
     };
 
-    println!("Replying with: {tags}");
-
     bot.edit(bot_msg, tags).await?;
 
     Ok(())

@@ -240,7 +240,6 @@ impl MistralClient {
             "max_tokens": self.max_tokens,
             "random_seed": self.random_seed,
         });
-        println!("Sending message: {body:?}");
 
         let response = self
             .client
